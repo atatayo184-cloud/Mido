@@ -7,8 +7,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-    - name: Checkout Code
+    - name: Checkout Repository
       uses: actions/checkout@v4
 
     - name: Set up JDK 17
@@ -17,106 +18,16 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Create Project Files
+    - name: Generate Gradle Wrapper
       run: |
-        echo "plugins { id 'com.android.application' version '8.2.0' apply false }" > build.gradle
-        
-        mkdir -p app/src/main
-        cat << 'EOF' > app/build.gradle
-        plugins {
-            id 'com.android.application'
-        }
-        android {
-            namespace 'com.midotv.app'
-            compileSdk 34
-            defaultConfig {
-                applicationId "com.midotv.app"
-                minSdk 21
-                targetSdk 34
-                versionCode 1
-                versionName "1.0"
-            }
-            buildTypes {
-                release {
-                    minifyEnabled false
-                }
-            }
-        }
-        dependencies {
-            implementation 'androidx.appcompat:appcompat:1.6.1'
-        }
-        EOF
-
-        cat << 'EOF' > app/src/main/AndroidManifest.xml
-        <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-            <uses-permission android:name="android.permission.INTERNET" />
-            <application
-                android:label="Mido TV"
-                android:theme="@style/Theme.AppCompat.Light.NoActionBar">
-                <activity
-                    android:name=".MainActivity"
-                    android:exported="true">
-                    <intent-filter>
-                        <action android:name="android.intent.action.MAIN" />
-                        <category android:name="android.intent.category.LAUNCHER" />
-                    </intent-filter>
-                </activity>
-            </application>
-        </manifest>
-        EOF
-
-        mkdir -p app/src/main/java/com/midotv/app
-        cat << 'EOF' > app/src/main/java/com/midotv/app/MainActivity.java
-        package com.midotv.app;
-        import android.os.Bundle;
-        import android.webkit.WebView;
-        import android.webkit.WebViewClient;
-        import androidx.appcompat.app.AppCompatActivity;
-
-        public class MainActivity extends AppCompatActivity {
-            @Override
-            protected void onCreate(Bundle savedInstanceState) {
-                super.onCreate(savedInstanceState);
-                WebView webView = new WebView(this);
-                webView.getSettings().setJavaScriptEnabled(true);
-                webView.getSettings().setDomStorageEnabled(true);
-                webView.setWebViewClient(new WebViewClient());
-                webView.loadUrl("https://mido-tv-app.surge.sh");
-                setContentView(webView);
-            }
-        }
-        EOF
-
-    - name: Download Gradle Wrapper
-      run: |
-        gradle wrapper --gradle-version 8.5 || wget https://raw.githubusercontent.com/gradle/gradle/v8.5.0/gradle/wrapper/gradle-wrapper.jar -O gradle/wrapper/gradle-wrapper.jar || true
-        mvn -version || true
-        gradle -version || true
-
-    - name: Generate Wrapper Manually if missing
-      run: |
-        if [ ! -f "gradlew" ]; then
-          echo "Generating gradlew manually..."
-          mkdir -p gradle/wrapper
-          echo "distributionBase=GRADLE_USER_HOME" > gradle/wrapper/gradle-wrapper.properties
-          echo "distributionPath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
-          echo "distributionUrl=https\://services.gradle.org/distributions/gradle-8.5-bin.zip" >> gradle/wrapper/gradle-wrapper.properties
-          
-          # Download wrapper files
-          wget https://raw.githubusercontent.com/gradle/gradle/v8.5.0/subprojects/wrapper/src/main/resources/org/gradle/wrapper/gradle-wrapper.properties -O gradle/wrapper/gradle-wrapper.properties
-          sed -i 's|distributionUrl=.*|distributionUrl\\=https\\://services.gradle.org/distributions/gradle-8.5-bin.zip|g' gradle/wrapper/gradle-wrapper.properties
-        fi
-
-    - name: Build with Gradle
-      uses: gradle/actions/setup-gradle@v3
-      with:
-        gradle-version: '8.5'
+        gradle wrapper --gradle-version 8.5
+        chmod +x gradlew
 
     - name: Build Debug APK
-      run: gradle assembleDebug
+      run: ./gradlew assembleDebug
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
-        name: Mido-TV-APK
+        name: app-debug
         path: app/build/outputs/apk/debug/app-debug.apk

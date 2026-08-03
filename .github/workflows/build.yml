@@ -18,12 +18,60 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Initialize Android Project Structure
+    - name: Create Complete Android Project Structure
       run: |
-        # إنشاء ملف الإعدادات الأساسي لـ Gradle إذا لم يكن موجوداً
+        # إنشاء هيكل مجلدات الأندرويد المطلوبة
+        mkdir -p app/src/main
+        
+        # إنشاء AndroidManifest.xml أساسي للـ WebView
+        cat << 'EOF' > app/src/main/AndroidManifest.xml
+        <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+            package="com.midotv.app">
+            <uses-permission android:name="android.permission.INTERNET" />
+            <application
+                android:allowBackup="true"
+                android:icon="@mipmap/ic_launcher"
+                android:label="Mido TV"
+                android:roundIcon="@mipmap/ic_launcher_round"
+                android:supportsRtl="true"
+                android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+                <activity
+                    android:name=".MainActivity"
+                    android:exported="true">
+                    <intent-filter>
+                        <action android:name="android.intent.action.MAIN" />
+                        <category android:name="android.intent.category.LAUNCHER" />
+                    </intent-filter>
+                </activity>
+            </application>
+        </manifest>
+        EOF
+
+        # إنشاء مجلد الكود وجافا وتشغيل الرابط
+        mkdir -p app/src/main/java/com/midotv/app
+        cat << 'EOF' > app/src/main/java/com/midotv/app/MainActivity.kt
+        package com.midotv.app
+
+        import android.os.Bundle
+        import android.webkit.WebView
+        import android.webkit.WebViewClient
+        import androidx.appcompat.app.AppCompatActivity
+
+        class MainActivity : AppCompatActivity() {
+            override fun onCreate(savedInstanceState: Bundle?) {
+                super.onCreate(savedInstanceState)
+                val webView = WebView(this)
+                webView.settings.javaScriptEnabled = true
+                webView.webViewClient = WebViewClient()
+                webView.loadUrl("https://mido-tv-app.surge.sh")
+                setContentView(webView)
+            }
+        }
+        EOF
+
+        # إعدادات الـ Gradle والبناء
         echo "include ':app'" > settings.gradle
         
-        # إنشاء ملف build.gradle الرئيسي للمشروع
         cat << 'EOF' > build.gradle
         buildscript {
             repositories {
@@ -32,6 +80,7 @@ jobs:
             }
             dependencies {
                 classpath 'com.android.tools.build:gradle:8.2.0'
+                classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0"
             }
         }
         allprojects {
@@ -42,10 +91,29 @@ jobs:
         }
         EOF
 
-        # إنشاء ملف gradle.properties
-        echo "android.useAndroidX=true" > gradle.properties
+        cat << 'EOF' > app/build.gradle
+        plugins {
+            id 'com.android.application'
+            id 'org.jetbrains.kotlin.android'
+        }
+        android {
+            namespace 'com.midotv.app'
+            compileSdk 34
+            defaultConfig {
+                applicationId "com.midotv.app"
+                minSdk 21
+                targetSdk 34
+                versionCode 1
+                versionName "1.0"
+            }
+        }
+        dependencies {
+            implementation 'androidx.core:core-ktx:1.12.0'
+            implementation 'androidx.appcompat:appcompat:1.6.1'
+        }
+        EOF
 
-        # توليد ملفات التشغيل Gradle Wrapper
+        echo "android.useAndroidX=true" > gradle.properties
         gradle wrapper --gradle-version 8.5
         chmod +x gradlew
 

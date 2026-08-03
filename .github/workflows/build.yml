@@ -18,12 +18,13 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Create Complete Android Project Structure
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+
+    - name: Create Manifest and Source Code
       run: |
-        # إنشاء هيكل مجلدات الأندرويد المطلوبة
-        mkdir -p app/src/main
+        mkdir -p app/src/main/java/com/midotv/app
         
-        # إنشاء AndroidManifest.xml أساسي للـ WebView
         cat << 'EOF' > app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android"
             package="com.midotv.app">
@@ -47,8 +48,6 @@ jobs:
         </manifest>
         EOF
 
-        # إنشاء مجلد الكود وجافا وتشغيل الرابط
-        mkdir -p app/src/main/java/com/midotv/app
         cat << 'EOF' > app/src/main/java/com/midotv/app/MainActivity.kt
         package com.midotv.app
 
@@ -69,7 +68,8 @@ jobs:
         }
         EOF
 
-        # إعدادات الـ Gradle والبناء
+    - name: Create Gradle Configuration Files
+      run: |
         echo "include ':app'" > settings.gradle
         
         cat << 'EOF' > build.gradle
@@ -114,11 +114,13 @@ jobs:
         EOF
 
         echo "android.useAndroidX=true" > gradle.properties
+        echo "sdk.dir=$ANDROID_SDK_ROOT" > local.properties
+
+    - name: Initialize Gradle Wrapper and Build APK
+      run: |
         gradle wrapper --gradle-version 8.5
         chmod +x gradlew
-
-    - name: Build Debug APK
-      run: ./gradlew assembleDebug
+        ./gradlew assembleDebug
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4

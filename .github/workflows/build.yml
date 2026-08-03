@@ -18,8 +18,34 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Generate Gradle Wrapper
+    - name: Initialize Android Project Structure
       run: |
+        # إنشاء ملف الإعدادات الأساسي لـ Gradle إذا لم يكن موجوداً
+        echo "include ':app'" > settings.gradle
+        
+        # إنشاء ملف build.gradle الرئيسي للمشروع
+        cat << 'EOF' > build.gradle
+        buildscript {
+            repositories {
+                google()
+                mavenCentral()
+            }
+            dependencies {
+                classpath 'com.android.tools.build:gradle:8.2.0'
+            }
+        }
+        allprojects {
+            repositories {
+                google()
+                mavenCentral()
+            }
+        }
+        EOF
+
+        # إنشاء ملف gradle.properties
+        echo "android.useAndroidX=true" > gradle.properties
+
+        # توليد ملفات التشغيل Gradle Wrapper
         gradle wrapper --gradle-version 8.5
         chmod +x gradlew
 
